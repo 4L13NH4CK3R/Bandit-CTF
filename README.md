@@ -17,6 +17,15 @@ Read the instructions
   
 3) Start Capturing the Passwords!  
 Discover techniques need to find specific passwords in the server!  
-``` 
+```
   
+### Want to Connect with me?  
+***Twitter:**  
+*https://twitter.com/CryptoH4ck3r*  
+***Stack Overflow:**  
+*https://stackoverflow.com/users/20818877/crypto-h4ck3r*  
+***Email:**  
+*cryptoh4ck3r@proton.me*  
+***HackerOne:***  
+*https://hackerone.com/cryptoh4ck3r*
 ## Good Luck! And Let The Games Begin!
