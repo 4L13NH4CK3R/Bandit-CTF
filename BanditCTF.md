@@ -1345,4 +1345,182 @@ NvEJF7oVjkddltPSrdKEFOllh9V1IBcq
 ```
   
 ***BOOM BABY!!!*** And now we have the Password to the next target!  
+  
+
+### Level 21;  
+**Username:** *bandit21*  
+**Password:** *NvEJF7oVjkddltPSrdKEFOllh9V1IBcq*  
+  
+*Now this challenge is slightly different. According to the website, there is a program running automatically, yet it is running at regular intervals from the cron. This is a time-based job scheduler. What we need to do is look inside the directory 'etc/cron.d/' to discover the configuration file and determine what commands are being executed.*  
+  
+The first thing we need to do, is take a look inside of the given directory and see what we are working with;  
+```
+$ cd /etc/cron.d/  
+  
+$ ls  4
+cronjob_bandit15_root  cronjob_bandit17_root  cronjob_bandit22  cronjob_bandit23  cronjob_bandit24  cronjob_bandit25_root  e2scrub_all  otw-tmp-dir  sysstat  
+```
+  
+Okay, so we can see that there are a few different cronjobs that are being ran at a certain period of time. And we do not know what or when they are running. So. We will need to figure out what they do, and see if one will give us a password.   
+  
+How do we do this? We can cat each of these files and see what they are doing!  
+```
+$ cat cronjob_bandit15_root  
+* * * * * root /usr/bin/cronjob_bandit15_root.sh &> /dev/null  
+  
+$ cat cronjob_bandit17_root  
+* * * * * root /usr/bin/cronjob_bandit17_root.sh &> /dev/null  
+  
+$ cat cronjob_bandit22  
+@reboot bandit22 /usr/bin/cronjob_bandit22.sh &> /dev/null  
+* * * * * bandit22 /usr/bin/cronjob_bandit22.sh &> /dev/null  
+  
+$ cat cronjob_bandit23  
+@reboot bandit23 /usr/bin/cronjob_bandit23.sh  &> /dev/null  
+* * * * * bandit23 /usr/bin/cronjob_bandit23.sh  &> /dev/null  
+  
+$ cat cronjob_bandit24  
+@reboot bandit24 /usr/bin/cronjob_bandit24.sh &> /dev/null  
+* * * * * bandit24 /usr/bin/cronjob_bandit24.sh &> /dev/null  
+  
+$ cat cronjob_bandit25_root  
+* * * * * root /usr/bin/cronjob_bandit25_root.sh &> /dev/null  
+  
+$ cat e2scrub_all  
+30 3 * * 0 root test -e /run/systemd/system || SERVICE_MODE=1 /usr/lib/x86_64-linux-gnu/e2fsprogs/e2scrub_all_cron    
+10 3 * * * root test -e /run/systemd/system || SERVICE_MODE=1 /sbin/e2scrub_all -A -r    
+  
+$ cat otw-tmp-dir  
+cat: otw-tmp-dir: Permission denied  
+    
+$ cat sysstat  
+The first element of the path is a directory where the debian-sa1  
+script is located  
+PATH=/usr/lib/sysstat:/usr/sbin:/usr/sbin:/usr/bin:/sbin:/bin  
+  
+Activity reports every 10 minutes everyday  
+5-55/10 * * * * root command -v debian-sa1 > /dev/null && debian-sa1 1 1  
+  
+Additional run at 23:59 to rotate the statistics file  
+59 23 * * * root command -v debian-sa1 > /dev/null && debian-sa1 60 2  
+  
+```
+  
+Now that we know what each file is doing, we do have a strange one. There is a file that we do not have permission to use. However, we are not focused on that file. We want to focus heavily on the bandit22 structure, as that is our next target.  
+*What we are going to focus heavily on is the cronjob_bandit22 file. If we look at the results from our cat command, we can see that it is executing in another directory. Let's see if we can cat that file too. So, let's see how it all should look from start to finish;*  
+  
+```
+$ cd /etc/cron.d  
+  
+$ ls  
+cronjob_bandit15_root  cronjob_bandit17_root  cronjob_bandit22  cronjob_bandit23  cronjob_bandit24  cronjob_bandit25_root  e2scrub_all  otw-tmp-dir  sysstat  
+  
+$ cat cronjob_bandit22  
+@reboot bandit22 /usr/bin/cronjob_bandit22.sh &> /dev/null  
+* * * * * bandit22 /usr/bin/cronjob_bandit22.sh &> /dev/null  
+  
+$ cat /usr/bin/cronjob_bandit22.sh  
+/bin/bash  
+chmod 644 /tmp/t7O6lds9S0RqQh9aMcz6ShpAoZKF7fgv  
+cat /etc/bandit_pass/bandit22 > /tmp/t7O6lds9S0RqQh9aMcz6ShpAoZKF7fgv  
+  
+```
+**IS THAT? COULD IT BE? "bandit_pass/bandit22" PASSWORD! Let's copy that and find out! Open a new tab and connect to server with bandit22;**  
+```
+$ ssh bandit22@13.50.114.40 -p 2220  
+                         _                     _ _ _   
+                        | |__   __ _ _ __   __| (_) |_ 
+                        | '_ \ / _` | '_ \ / _` | | __|
+                        | |_) | (_| | | | | (_| | | |_ 
+                        |_.__/ \__,_|_| |_|\__,_|_|\__|
+                                                       
+
+                      This is an OverTheWire game server. 
+            More information on http://www.overthewire.org/wargames
+
+bandit22@13.50.114.40's password:   
+Permission denied, please try again.
+```
+
+OH NO! We do not have the access we seek! Why is this? Simply put, we need to read what is happening. In the cronjob it is writing to a '/tmp' directory with the file name "t7O6lds9S0RqQh9aMcz6ShpAoZKF7fgv". Now, if we cat that file name in the /tmp directory location, let's see what we have;  
+```
+$ cat /tmp/t7O6lds9S0RqQh9aMcz6ShpAoZKF7fgv  
+WdDozAdTM2z9DiFEQ2mGlwngMfj4EZff  
+```
+  
+***MAGIC BOOM!*** **Don't we like it when we actually slow down & read what is happening! The tricks & hacks are there, just do a bit of reading!**  
+  
+
+### Level 22;  
+**Username:** *bandit22*  
+**Password:** *WdDozAdTM2z9DiFEQ2mGlwngMfj4EZff*  
+  
+*This looks almost identical to the last challenge. Cronjobs working, timed schedulers. Same directory. But it looks like we should be looking at some shell scripts written by other people. Let's get started!*  
+  
+The first thing I want to do, is take a peak inside of the /etc/cron.d/ directory and see what is happening. And since I am only focused on bandit23 for the next challenge, let's start there;  
+```
+$ cd /etc/cron.d/  
+  
+$ ls  
+cronjob_bandit15_root  cronjob_bandit17_root  cronjob_bandit22  cronjob_bandit23  cronjob_bandit24  cronjob_bandit25_root  e2scrub_all  otw-tmp-dir  sysstat  
+  
+$ cat cronjob_bandit23  
+@reboot bandit23 /usr/bin/cronjob_bandit23.sh  &> /dev/null  
+* * * * * bandit23 /usr/bin/cronjob_bandit23.sh  &> /dev/null  
+```
+  
+Interesting this one is. It looks like there is a reboot function hapenning. Let's take a closer look inside this directory.  
+```
+$ cat /usr/bin/cronjob_bandit23.sh  
+!/bin/bash  
+  
+myname=$(whoami)  
+mytarget=$(echo I am user $myname | md5sum | cut -d ' ' -f 1)  
+  
+echo "Copying passwordfile /etc/bandit_pass/$myname to /tmp/$mytarget"  
+  
+cat /etc/bandit_pass/$myname > /tmp/$mytarget  
+```
+Well, the instructions appear to be a bit clear. We just need to read this code.  
+  
+First thing we have is where we can find our password. And that is displayed on the last line;  
+"cat /etc/bandit_pass/$myname > /tmp/$mytarget"  
+However, we can not just go to that directory. It does not exist. We know this as the "$" symbol is there. Which means it is calling a function or variable. So we need to break this code down a bit more.  
+  
+Now, if we take a look at the 3rd line of code;  
+"myname=$(whoami)"  
+We can see that the coder is setting the variable "myname" and assigning it from the name of the logged in user. And we can type in "whoami" on our terminals and get our username like so;  
+```
+$ whoami  
+bandit22  
+```
+And now we take a look at the fourth line of code;  
+"mytarget=$(echo I am user $myname | md5sum | cut -d ' ' -f 1)"  
+  
+What is going on here?!?!?! This is looking like they are trying to set the target by echoing that they are user. and running it through md5Sum and then they are working on trimming it up some.  
+  
+So what do we do?, we need to change the "myname" to bandit23 and see if that works and then run the "mytarget" script line;  
+```
+$ myname=bandit23  
+  
+$ $myname
+-bash: bandit23: command not found  
+  
+$ echo I am user $myname | md5sum | cut -d ' ' -f 1  
+8ca319486bfbbc3663ea0fbe81326349  
+```
+Okay. So what just happened? We simply told the server that we are now using "$myname" is equal to "bandit23" (That is the user we are trying to get access too). And then we performed and echo command exactly like what is inside the cronjob and we where able to get the name of that file!  
+  
+```
+$ cat /tmp/8ca319486bfbbc3663ea0fbe81326349  
+QYw0Y2aiA672PsMmh9puTQuhoz8SyR2G  
+```
+  
+And ***BOOM BABY!*** We have the password for bandit23! Let's GO!  
+  
+  
+### Level 23;  
+**Username:** *bandit23*  
+**Password:** *QYw0Y2aiA672PsMmh9puTQuhoz8SyR2G*  
+  
 
