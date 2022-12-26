@@ -1157,4 +1157,192 @@ VwOSWtCA7lRKkTfbr2IDh6awj9RNZM5e
 **Password:** *VwOSWtCA7lRKkTfbr2IDh6awj9RNZM5e*  
 *Now this is going to be an exciting challenge. There are 2 file documents "passwords.new" & "passwords.old". All we need to do is discover what password has been changed between these two documents!*  
   
+Now, we can use a simple command "diff" that will help us discover what the difference is between 2 files. This is done like so;  
+```
+$ diff passwords.new passwords.old  
+42c42  
+< hga5tuuCLF6fFzUpnagiMN8ssu9LFrdg  
+---  
+> U79zsNCl1urwJ5rU6pg7ZSCi7ifWOWpT  
+
+```
+  
+Now we have 2 possible passwords we can try. I will assume it is the first one, however, we will not know until we try them out. So open up a new tab and try to ssh into bandit18 using the first password. I suggested using the first password as it is first. However, you can use the other one if you desire.  
+  
+**IT WORKED!** However, we have a major problem. We have an error message when trying to connect to the server with bandit18 as the username;  
+Byebye !  
+Connection to 13.50.114.40 closed.  
+  
+So, how do we bypass this? Let's move onto the next challenge;  
+  
+### Level 18;  
+**Username:** *bandit18*  
+**Password:** *hga5tuuCLF6fFzUpnagiMN8ssu9LFrdg*  
+  
+*According to the site, we can read;*  
+***The password for the next level is stored in a file readme in the homdirectory. Unfortunately, someone has modified .bashrc to log you out when you log in with SSH.***  
+  
+So the commands we need to look into are;  
+```
+ssh  
+ls  
+cat  
+```
+  
+With these commands, what could we possible do in order to get to the next level? We will be using the SSH command in order to connect to the server. However, we are going to specify some additional parameters.  
+We need to cancel out the .bashrc when we connect. If we Google search "ssh change shell sh", we can see a query from "serverfault.com" with the title "Choosing the shell that SSH Uses? - Server Fault". Open up that 
+link, and let's start reading & getting to work on bypassing this SSH Connection!  
+  
+If we can force the pseudo-tty allocation AND we can tell our SSH command to start inside of our /bin/sh directory, we SHOULD be able to gain access to the server. Let's find out;  
+```
+$ ssh -t bandit18@13.50.114.40 -p 2220 '/bin/sh'  
+                         _                     _ _ _   
+                        | |__   __ _ _ __   __| (_) |_ 
+                        | '_ \ / _` | '_ \ / _` | | __|
+                        | |_) | (_| | | | | (_| | | |_ 
+                        |_.__/ \__,_|_| |_|\__,_|_|\__|
+                                                       
+
+                      This is an OverTheWire game server. 
+            More information on http://www.overthewire.org/wargames
+
+bandit18@13.50.114.40's password: 
+  
+$ whoami  
+bandit18  
+```
+AND SUCCESS!!!! CONGRATS! We know now how to start an SSH connection by forcing the Pseudo allocation and starting in a different directory.   
+Now, let's discover what we have and see if we can find a password;  
+```
+$ ls  
+readme  
+  
+$ cat readme  
+awhqfNnAbc1naukrpqDYcF95h7HoMTrC  
+```
+  
+**TO EASY!!!** *How hard is this? Are you amazed you even got this far? I know I am! Let's keep it goin!*  
+  
+### Level 19;  
+**Username:** *bandit19*  
+**Password:** *awhqfNnAbc1naukrpqDYcF95h7HoMTrC*  
+*Now, this level is most certianly a tricky one! We need to use the setuid binary inside of the home directory. And then we need to be able to execute it without using any arguments. And only then will we be able to discover the password hidden inside of '/etc/bandit_pass/bandit20'. Let's start working our way through this process!*  
+  
+```
+$ ls  
+bandit20-do  
+```
+This tells us that this is a "do" executable file. And we need to discover what it is;  
+```
+$ file bandit20-do  
+bandit20-do: setuid ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux.so.2, BuildID[sha1]=c148b21f7eb7e816998f07490c8007567e51953f, for GNU/Linux 3.2.0, not stripped  
+```
+Okay. So that is a lot. But can we just cat the file we want to look at? Let's find out;  
+```
+$ cat /etc/bandit_pass/bandit20  
+cat: /etc/bandit_pass/bandit20: Permission denied  
+```
+   
+Well poopy doop! So.What do we do? Well, the hints tells us that we need to execute it without any arguments to find out how to use it. So let's play around with this.  
+```
+**If we try to run the executable, we will see;**  
+$ ./bandit20-do  
+Run a command as another user.  
+  Example: ./bandit20-do id  
+  
+```
+  
+Now, we are going to rund "id" to see what our id is, and then we can run ./bandit20-di id in order to see what that id is. And then we will be forcing the program to work with our directory. Let's see how this should work;  
+```
+$ id  
+uid=11019(bandit19) gid=11019(bandit19) groups=11019(bandit19)  
+**This is our current id. We can see we are "bandit19".  
+  
+$ ./bandit20-do id  
+uid=11019(bandit19) gid=11019(bandit19) euid=11020(bandit20) groups=11019(bandit19)  
+**Looks like bandit19 can execute this executable. So let's force the command.  
+  
+$ ./bandit20-do cat /etc/bandit_pass/bandit20
+VxCazJaVykI6W36BkBU0mJTCM8rR95XT  
+  
+```
+***LIKE STEALING CANDY FROM A BABY!***  
+Now, we have the password for level 20, let's head on over there now!  
+  
+### Level 20;  
+**Username:** *bandit20*  
+**Password:** *VxCazJaVykI6W36BkBU0mJTCM8rR95XT*  
+*Okay. So this challenge is telling us that we net to use the setuid binary inside of the home directory in order to make a connection to the localhost on the port we tell it too. And if we are successful, then it will read a line of text from the connection and compare it to the password we just retracted!*  
+  
+**So where the heck do we begin?**  
+*Let's talk about this setup!*  
+What do we have in the directory;  
+```
+$ ls  
+suconnect  
+  
+$ file suconnect  
+suconnect: setuid ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux.so.2, BuildID[sha1]=67d1a01f06a6ae6a42184cc8cf912967cecf72da, for GNU/Linux 3.2.0, not stripped  
+
+```
+  
+Now we are being asked to transmit the password from another connection. Let's run an NMap command to find the tcp ports to the next location;  
+```
+$ nmap -p- localhost  
+Starting Nmap 7.80 ( https://nmap.org ) at 2022-12-26 02:53 UTC  
+Nmap scan report for localhost (127.0.0.1)  
+Host is up (0.000087s latency).  
+Not shown: 65522 closed ports  
+PORT      STATE SERVICE  
+22/tcp    open  ssh  
+2220/tcp  open  netiq  
+2231/tcp  open  wimaxasncp  
+30000/tcp open  ndmps  
+30001/tcp open  pago-services1  
+30002/tcp open  pago-services2  
+31046/tcp open  unknown  
+31518/tcp open  unknown  
+31691/tcp open  unknown  
+31790/tcp open  unknown  
+31960/tcp open  unknown  
+35659/tcp open  unknown  
+39451/tcp open  unknown  
+  
+Nmap done: 1 IP address (1 host up) scanned in 2.37 seconds  
+```
+Alright, so we are going to use the executable file that we have in order to connect with these ports. And this may take a second. So just like we did a few challenges ago, we will connect to another port and then insert the password. Let's go port finding!  
+  
+```
+**PLEASE NOTE: I am not starting with "22" or "2220". Why? Because those are the default ports to connect to the server. It would be too obvious to use those. So we start with the wimaxasncp on port 2231!  
+$ ./suconnect 2231
+```
+While we go through all of these ports, we can not find anything. So what do we do now?  
+Let's use netcat in order to see what ports we can find? In order to do this, we will need to have 2 tabs opened up for this one.  
+This will mean we are using 2 tabs that are connected to bandit20@domain and 1 of them will be running ncat "nc" on the ports and watch what happens when we connect to the different ports.  
+**Tab 1 (NCat Watching) Setup;**  
+```
+$ nc -l 4444
+```
+**Tab 2 (Sending Passwords to Port 444)**  
+```
+$ ./suconnect 4444  
+VxCazJaVykI6W36BkBU0mJTCM8rR95XT  
+```
+***WAIT!!! WHERE THE HECK DID PORT 4444 COME FROM?!?!?!***  
+Instead of utilizing the ports that are already there, I created my own port. You can try this same technique on any other port you desire! Try it out and see if it works!  
+  
+Now, we need to go back to tab 2 and paste the password.  
+Now, go to tab 1 and paste the password.  
+```
+** TAB 2: **  
+$ ./suconnect 4444  
+VxCazJaVykI6W36BkBU0mJTCM8rR95XT  
+  
+** TAB 1: **  
+$ nc -l 4444  
+VxCazJaVykI6W36BkBU0mJTCM8rR95XT  
+NvEJF7oVjkddltPSrdKEFOllh9V1IBcq  
+```
+  
+***BOOM BABY!!!*** And now we have the Password to the next target!  
 
