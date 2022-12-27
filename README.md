@@ -29,3 +29,7 @@ Discover techniques need to find specific passwords in the server!
 ***HackerOne:***  
 *https://hackerone.com/cryptoh4ck3r*
 ## Good Luck! And Let The Games Begin!
+
+## Coffee Time  
+*I do enjoy creating scripts as well as sharing information on CTF's. But I fear that after completing my CTF for the Bandit Challenge with Over the Wire, I ran out of coffee. Can you help me get some more?  
+BTC ADR: bc1q7np8xjmz40knvu6lma8xqmqkpwkssmwpmq9vw0
