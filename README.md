@@ -32,4 +32,11 @@ Discover techniques need to find specific passwords in the server!
 
 ## Coffee Time  
 *I do enjoy creating scripts as well as sharing information on CTF's. But I fear that after completing my CTF for the Bandit Challenge with Over the Wire, I ran out of coffee. Can you help me get some more?  
-BTC ADR: bc1q7np8xjmz40knvu6lma8xqmqkpwkssmwpmq9vw0
+BitCoin Wallet (Recieving):  
+3QVThxXUbV4uaKBBJP1bHahZH2iJhpmncT  
+  
+Etherum Wallet (Recieving):  
+0x07a0d46097C63Ee7E66229821fc0115Bb0E2F424  
+  
+Doge Wallet (Recieving):  
+DRjYNp9JGbkFSVL5tXQqbU6y8Wy99bJA8m  
